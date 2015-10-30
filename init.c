@@ -617,6 +617,16 @@ static int cutorch_setDevice(lua_State *L)
   return 0;
 }
 
+static int cutorch_profiler_start(lua_State *L)
+{
+  THCudaCheck(cudaProfilerStart());
+}
+
+static int cutorch_profiler_stop(lua_State *L)
+{
+  THCudaCheck(cudaProfilerStop());
+}
+
 #define SET_DEVN_PROP(NAME) \
   lua_pushnumber(L, prop.NAME); \
   lua_setfield(L, -2, #NAME);
@@ -777,6 +787,8 @@ static const struct luaL_Reg cutorch_stuff__ [] = {
   {"setRNGState", cutorch_setRNGState},
   {"getState", cutorch_getState},
   {"setHeapTracking", cutorch_setHeapTracking},
+  {"profilerStart", cutorch_profiler_start},
+  {"profilerStop", cutorch_profiler_stop},
   {NULL, NULL}
 };
 
