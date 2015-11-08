@@ -2,6 +2,8 @@
 #include "luaT.h"
 #include "THCGeneral.h"
 #include "THCTensorRandom.h"
+#include "cuda_profiler_api.h"
+#include "nvToolsExt.h"
 
 extern void cutorch_CudaStorage_init(lua_State* L);
 extern void cutorch_CudaTensor_init(lua_State* L);
@@ -617,14 +619,76 @@ static int cutorch_setDevice(lua_State *L)
   return 0;
 }
 
+nvtxEventAttributes_t get_Nvtx_Event(const char *name, const char *color)
+{
+  nvtxEventAttributes_t eventAttrib = {0};
+  eventAttrib.version = NVTX_VERSION;
+  eventAttrib.size = NVTX_EVENT_ATTRIB_STRUCT_SIZE;
+  eventAttrib.colorType = NVTX_COLOR_ARGB;
+  eventAttrib.messageType = NVTX_MESSAGE_TYPE_ASCII;
+  eventAttrib.message.ascii = name;
+  eventAttrib.color = 0xFF00FF00;
+
+  if(color)
+  {
+    if(strcmp(color, "green") == 0)
+    {
+      eventAttrib.color = 0xFF00FF00;
+    }
+    else if(strcmp(color, "blue") == 0)
+    {
+      eventAttrib.color = 0xFF0000FF;
+    }
+    else if(strcmp(color, "yellow") == 0)
+    {
+      eventAttrib.color = 0xFFFFFF00;
+    }
+    else if(strcmp(color, "purple") == 0)
+    {
+      eventAttrib.color = 0xFF800080;
+    }
+    else if(strcmp(color, "red") == 0)
+    {
+      eventAttrib.color = 0xFFFF0000;
+    }
+    else if(strcmp(color, "gray") == 0)
+    {
+      eventAttrib.color = 0xFF808080;
+    }
+  }
+
+  return eventAttrib;
+}
+
 static int cutorch_profiler_start(lua_State *L)
 {
   THCudaCheck(cudaProfilerStart());
+
+  return 0;
 }
 
 static int cutorch_profiler_stop(lua_State *L)
 {
   THCudaCheck(cudaProfilerStop());
+
+  return 0;
+}
+
+static int cutorch_profiler_range_push(lua_State *L)
+{
+  const char *name = lua_tostring(L, 1);
+  const char *color = lua_tostring(L, 2);
+  const nvtxEventAttributes_t attr = get_Nvtx_Event(name, color);
+  nvtxRangePushEx(&attr);
+
+  return 0;
+}
+
+static int cutorch_profiler_range_pop(lua_State *L)
+{
+  nvtxRangePop();
+
+  return 0;
 }
 
 #define SET_DEVN_PROP(NAME) \
@@ -789,6 +853,8 @@ static const struct luaL_Reg cutorch_stuff__ [] = {
   {"setHeapTracking", cutorch_setHeapTracking},
   {"profilerStart", cutorch_profiler_start},
   {"profilerStop", cutorch_profiler_stop},
+  {"profilerRangePush", cutorch_profiler_range_push},
+  {"profilerRangePop", cutorch_profiler_range_pop},
   {NULL, NULL}
 };
 

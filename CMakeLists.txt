@@ -23,9 +23,10 @@ SET(src Storage.c init.c Tensor.c TensorMath.c TensorOperator.c torch/utils.c)
 SET(luasrc init.lua Tensor.lua FFI.lua test/test.lua)
 
 ADD_TORCH_WRAP(cudatensormathwrap TensorMath.lua)
+FIND_LIBRARY(CUDA_NVTX_LIB nvToolsExt ${CUDA_TOOLKIT_ROOT_DIR}/lib64/)
 
 ADD_TORCH_PACKAGE(cutorch "${src}" "${luasrc}")
-TARGET_LINK_LIBRARIES(cutorch luaT THC)
+TARGET_LINK_LIBRARIES(cutorch ${CUDA_NVTX_LIB} luaT THC)
 
 IF(LUALIB)
   TARGET_LINK_LIBRARIES(cutorch ${LUALIB})
